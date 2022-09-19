@@ -1,0 +1,22 @@
+[package]
+name = "iced-launcher"
+version = "0.1.0"
+authors = ["Ashley Wulber <ashley@system76.com>"]
+edition = "2021"
+
+[dependencies]
+iced = { git = "https://github.com/wash2/iced", features = ["wgpu", "default_system_font", "palette", "svg", "image", "tokio"], branch = "custom-theme" }
+iced_native = { git = "https://github.com/wash2/iced", branch = "custom-theme"  }
+iced_style = { git = "https://github.com/wash2/iced", branch = "custom-theme"  }
+adw-user-colors-lib = { git = "https://github.com/pop-os/user-color-editor" }
+
+log = "0.4"
+pretty_env_logger = "0.4"
+once_cell = "1.9"
+futures = "0.3.21"
+xdg = "2.4.0"
+# Application i18n
+i18n-embed = { version = "0.13.4", features = ["fluent-system", "desktop-requester"] }
+i18n-embed-fl = "0.6.4"
+rust-embed = "6.3.0"
+

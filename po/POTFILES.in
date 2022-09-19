@@ -1,0 +1,6 @@
+data/com.system76.IcedLauncher.desktop.in.in
+data/com.system76.IcedLauncher.gschema.xml.in
+data/com.system76.IcedLauncher.metainfo.xml.in.in
+data/resources/ui/shortcuts.ui
+data/resources/ui/window.ui
+src/application.rs

@@ -1,0 +1,22 @@
+Source: iced-launcher
+Section: admin
+Priority: optional
+Maintainer: Ashley Wulber <ashley@system76.com>
+Build-Depends:
+  debhelper (>= 11),
+  debhelper-compat (= 11),
+  rustc (>=1.57),
+  cargo,
+  meson,
+  libgtk-4-dev,
+  pkg-config,
+  desktop-file-utils,
+Standards-Version: 4.3.0
+Homepage: https://github.com/pop-os/iced-launcher
+
+Package: iced-launcher
+Architecture: amd64 arm64
+Depends:
+  ${misc:Depends},
+  ${shlibs:Depends}
+Description: Iced Launcher
