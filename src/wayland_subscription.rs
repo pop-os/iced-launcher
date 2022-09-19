@@ -1,7 +1,6 @@
 use futures::Stream;
 use iced::futures::{channel::mpsc, StreamExt};
 use pop_launcher::{Response, Request};
-use pop_launcher_service::IpcClient;
 use std::{hash::Hash, pin::Pin};
 
 #[derive(Debug, Clone)]

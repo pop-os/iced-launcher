@@ -131,7 +131,7 @@ impl Application for IcedLauncher {
                     }
                 },
                 LauncherEvent::Error(err) => {
-                    // error!("{}", err);
+                    log::error!("{}", err);
                 }
             },
             Message::Clear => {
@@ -147,8 +147,8 @@ impl Application for IcedLauncher {
                 }
             }
             Message::SentRequest => {}
-            Message::Error(_) => {
-                // error!("{}", err);
+            Message::Error(err) => {
+                log::error!("{}", err);
             }
             Message::Select(i) => {
                 self.selected_item = i;
