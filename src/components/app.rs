@@ -4,7 +4,7 @@ use iced::futures::{channel::mpsc, SinkExt};
 use iced::theme::palette::Extended;
 use iced::theme::Palette;
 use iced::widget::{button, column, container, row, scrollable, text, text_input, vertical_space};
-use iced::{executor, Application, Command, Element, Length, Settings, Subscription, Theme, subscription};
+use iced::{executor, Application, Command, Element, Length, Settings, Subscription, Theme, subscription, window};
 use iced_native::widget::helpers;
 use pop_launcher::SearchResult;
 
@@ -96,7 +96,7 @@ impl Application for IcedLauncher {
             Message::Activate(None) => {
                 if let (Some(tx), Some(item)) = (
                     self.tx.as_ref(),
-                    self.selected_item.and_then(|i| self.launcher_items.get(i)),
+                    self.launcher_items.get(self.selected_item.unwrap_or_default()),
                 ) {
                     let mut tx = tx.clone();
                     let id = item.id;
@@ -126,6 +126,10 @@ impl Application for IcedLauncher {
                         pop_launcher::Response::DesktopEntry { path, gpu_preference } => todo!(),
                         pop_launcher::Response::Update(list) => {
                             self.launcher_items.splice(.., list);
+                            let unit = 48;
+                            let w = 500;
+                            return window::resize(w, 100 + unit * self.launcher_items.len() as u32);
+
                         },
                         pop_launcher::Response::Fill(_) => todo!(),
                     }
