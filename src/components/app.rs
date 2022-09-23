@@ -1,15 +1,17 @@
 use adw_user_colors_lib::notify::*;
 use iced::alignment::{Horizontal, Vertical};
 use iced::futures::{channel::mpsc, SinkExt};
+use iced::subscription::events_with;
 use iced::theme::palette::Extended;
 use iced::theme::Palette;
+use iced::widget::text_input::Id;
 use iced::widget::{button, column, container, row, scrollable, text, text_input, vertical_space};
 use iced::{executor, Application, Command, Element, Length, Settings, Subscription, Theme, subscription, window};
 use iced_native::widget::helpers;
 use pop_launcher::SearchResult;
 
 use crate::config;
-use crate::wayland_subscription::{LauncherEvent, LauncherRequest, launcher};
+use crate::launcher_subscription::{LauncherEvent, LauncherRequest, launcher};
 
 pub const NUM_LAUNCHER_ITEMS: u8 = 10;
 
@@ -47,6 +49,7 @@ enum Message {
     LauncherEvent(LauncherEvent),
     SentRequest,
     Error(String),
+    Window(iced_native::window::Event),
 }
 
 impl Application for IcedLauncher {
@@ -76,6 +79,7 @@ impl Application for IcedLauncher {
                 if let Some(tx) = self.tx.as_ref() {
                     let mut tx = tx.clone();
                     let cmd = async move { tx.send(LauncherRequest::Search(value)).await };
+
                     return Command::perform(cmd, |res| match res {
                         Ok(_) => Message::SentRequest,
                         Err(err) => Message::Error(err.to_string()),
@@ -157,19 +161,51 @@ impl Application for IcedLauncher {
             Message::Select(i) => {
                 self.selected_item = i;
             }
+            Message::Window(e) => match e {
+                iced_native::window::Event::Focused => {
+                    let mut cmds = Vec::new();
+                    if let Some(tx) = self.tx.as_ref() {
+                        let mut tx = tx.clone();
+                        let search_cmd = async move { tx.send(LauncherRequest::Search("".to_string())).await };
+                        cmds.push(Command::perform(search_cmd, |res| match res {
+                            Ok(_) => Message::SentRequest,
+                            Err(err) => Message::Error(err.to_string()),
+                        }));
+                    }
+                    self.input_value = "".to_string();
+                    cmds.push(text_input::focus(Id::new("launcher_entry")));
+                    return Command::batch(cmds);
+                }
+                iced_native::window::Event::Unfocused => {
+                    let mut cmds = Vec::new();
+                    if let Some(tx) = self.tx.as_ref() {
+                        let mut tx = tx.clone();
+                        let search_cmd = async move { tx.send(LauncherRequest::Search("".to_string())).await };
+                        cmds.push(Command::perform(search_cmd, |res| match res {
+                            Ok(_) => Message::SentRequest,
+                            Err(err) => Message::Error(err.to_string()),
+                        }));
+                    }
+                    self.input_value = "".to_string();
+                    cmds.push(text_input::focus(Id::new("launcher_entry")));
+                    return Command::batch(cmds);
+                }
+                _ => {}
+            },
         }
         Command::none()
     }
 
     fn view(&self) -> Element<Message> {
-        let text_input = text_input(
+        let launcher_entry = text_input(
             "Type something...",
             &self.input_value,
             Message::InputChanged,
         )
         .on_submit(Message::Activate(None))
         .padding(10)
-        .size(20);
+        .size(20)
+        .id(Id::new("launcher_entry"));
 
         let clear_button = button("X").padding(10).on_press(Message::Clear);
 
@@ -194,7 +230,7 @@ impl Application for IcedLauncher {
             .collect();
 
         let content = column![
-            row![text_input, clear_button].spacing(10),
+            row![launcher_entry, clear_button].spacing(10),
             helpers::column(buttons).spacing(8),
         ]
         .spacing(20)
@@ -217,6 +253,10 @@ impl Application for IcedLauncher {
                     ThemeUpdate::Errored => Message::Error("Theme update error!".to_string()),
                 }),
                 launcher(0).map(|(_, msg)| Message::LauncherEvent(msg)),
+                events_with(|e, status| match e {
+                    iced::Event::Window(e) => Some(Message::Window(e)),
+                    _ => None,
+                })
             ]
             .into_iter(),
         )

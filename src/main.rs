@@ -2,7 +2,7 @@ mod components;
 #[rustfmt::skip]
 mod config;
 mod localize;
-mod wayland_subscription;
+mod launcher_subscription;
 
 use config::APP_ID;
 use log::info;

@@ -8,6 +8,7 @@ edition = "2021"
 iced = { git = "https://github.com/wash2/iced", features = ["wgpu", "default_system_font", "palette", "svg", "image", "tokio"], branch = "fix_window_resize"}
 iced_native = { git = "https://github.com/wash2/iced", branch = "fix_window_resize" }
 iced_style = { git = "https://github.com/wash2/iced", branch = "fix_window_resize" }
+iced_winit = { git = "https://github.com/wash2/iced", branch = "fix_window_resize" }
 adw-user-colors-lib = { git = "https://github.com/pop-os/user-color-editor" }
 serde = { version = "1.0.134", features = ["derive"] }
 pop-launcher-service = { git = "https://github.com/wash2/launcher.git", branch = "cosmic-toplevel" }

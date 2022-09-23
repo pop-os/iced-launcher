@@ -1572,6 +1572,7 @@ dependencies = [
  "iced",
  "iced_native",
  "iced_style",
+ "iced_winit",
  "log",
  "once_cell",
  "pop-launcher",
