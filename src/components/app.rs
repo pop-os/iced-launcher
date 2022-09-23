@@ -8,7 +8,9 @@ use iced::widget::text_input::Id;
 use iced::widget::{button, column, container, row, scrollable, text, text_input, vertical_space};
 use iced::{executor, Application, Command, Element, Length, Settings, Subscription, Theme, subscription, window};
 use iced_native::widget::helpers;
+use once_cell::sync::OnceCell;
 use pop_launcher::SearchResult;
+use zbus::Connection;
 
 use crate::config;
 use crate::launcher_subscription::{LauncherEvent, LauncherRequest, launcher};
@@ -37,6 +39,8 @@ struct IcedLauncher {
     input_value: String,
     launcher_items: Vec<SearchResult>,
     selected_item: Option<usize>,
+    dbus_conn: OnceCell<Connection>,
+
 }
 
 #[derive(Debug, Clone)]
@@ -50,6 +54,7 @@ enum Message {
     SentRequest,
     Error(String),
     Window(iced_native::window::Event),
+    DbusConn(Connection),
 }
 
 impl Application for IcedLauncher {
@@ -59,7 +64,12 @@ impl Application for IcedLauncher {
     type Flags = ();
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
-        (IcedLauncher::default(), Command::none())
+        let cmd = async move { Connection::session().await };
+        (IcedLauncher::default()
+        , Command::perform(cmd, |res| match res {
+            Ok(conn) => Message::DbusConn(conn),
+            Err(err) => Message::Error(err.to_string()),
+        }))
     }
 
     fn title(&self) -> String {
@@ -186,12 +196,21 @@ impl Application for IcedLauncher {
                             Err(err) => Message::Error(err.to_string()),
                         }));
                     }
+                    if let Some(dbus_conn) = self.dbus_conn.get() {
+                        let dbus_conn = dbus_conn.clone();
+                        let cmd = async move { dbus_conn.call_method(Some("com.system76.CosmicAppletHost"), "/com/system76/CosmicAppletHost", Some("com.system76.CosmicAppletHost"), "Hide", &("com.system76.IcedLauncher")).await };
+                        cmds.push(Command::perform(cmd, |res| match res {
+                            Ok(_) => Message::SentRequest,
+                            Err(err) => Message::Error(err.to_string()),
+                        }));
+                    }
                     self.input_value = "".to_string();
                     cmds.push(text_input::focus(Id::new("launcher_entry")));
                     return Command::batch(cmds);
                 }
                 _ => {}
             },
+            Message::DbusConn(conn) => self.dbus_conn.set(conn).unwrap(),
         }
         Command::none()
     }
