@@ -5,15 +5,19 @@ use iced::subscription::events_with;
 use iced::theme::palette::Extended;
 use iced::theme::Palette;
 use iced::widget::text_input::Id;
-use iced::widget::{button, column, container, row, scrollable, text, text_input, vertical_space};
-use iced::{executor, Application, Command, Element, Length, Settings, Subscription, Theme, subscription, window};
+use iced::widget::{button, column, container, row, text, text_input};
+use iced::{
+    executor, window, Application, Command, Element, Length, Settings, Subscription, Theme,
+};
 use iced_native::widget::helpers;
 use once_cell::sync::OnceCell;
 use pop_launcher::SearchResult;
+use xdg::BaseDirectories;
 use zbus::Connection;
 
 use crate::config;
-use crate::launcher_subscription::{LauncherEvent, LauncherRequest, launcher};
+use crate::launcher_subscription::{launcher, LauncherEvent, LauncherRequest};
+use crate::util::{image_icon, svg_icon};
 
 pub const NUM_LAUNCHER_ITEMS: u8 = 10;
 
@@ -21,7 +25,7 @@ pub fn run() -> iced::Result {
     let mut settings = Settings::default();
     settings.window.decorations = false;
     settings.window.decorations = false;
-    settings.window.size = (500, 100);
+    settings.window.size = (600, 120);
     IcedLauncher::run(settings)
 }
 
@@ -40,7 +44,7 @@ struct IcedLauncher {
     launcher_items: Vec<SearchResult>,
     selected_item: Option<usize>,
     dbus_conn: OnceCell<Connection>,
-
+    base_directories: Option<BaseDirectories>,
 }
 
 #[derive(Debug, Clone)]
@@ -65,11 +69,16 @@ impl Application for IcedLauncher {
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
         let cmd = async move { Connection::session().await };
-        (IcedLauncher::default()
-        , Command::perform(cmd, |res| match res {
-            Ok(conn) => Message::DbusConn(conn),
-            Err(err) => Message::Error(err.to_string()),
-        }))
+        (
+            IcedLauncher {
+                base_directories: xdg::BaseDirectories::with_prefix("icons").ok(),
+                ..Default::default()
+            },
+            Command::perform(cmd, |res| match res {
+                Ok(conn) => Message::DbusConn(conn),
+                Err(err) => Message::Error(err.to_string()),
+            }),
+        )
     }
 
     fn title(&self) -> String {
@@ -95,7 +104,7 @@ impl Application for IcedLauncher {
                         Err(err) => Message::Error(err.to_string()),
                     });
                 }
-            },
+            }
             Message::Activate(Some(i)) => {
                 if let (Some(tx), Some(item)) = (self.tx.as_ref(), self.launcher_items.get(i)) {
                     let mut tx = tx.clone();
@@ -110,7 +119,8 @@ impl Application for IcedLauncher {
             Message::Activate(None) => {
                 if let (Some(tx), Some(item)) = (
                     self.tx.as_ref(),
-                    self.launcher_items.get(self.selected_item.unwrap_or_default()),
+                    self.launcher_items
+                        .get(self.selected_item.unwrap_or_default()),
                 ) {
                     let mut tx = tx.clone();
                     let id = item.id;
@@ -133,20 +143,20 @@ impl Application for IcedLauncher {
                         Err(err) => Message::Error(err.to_string()),
                     });
                 }
-                LauncherEvent::Response(response) => {
-                    match response {
-                        pop_launcher::Response::Close => todo!(),
-                        pop_launcher::Response::Context { id, options } => todo!(),
-                        pop_launcher::Response::DesktopEntry { path, gpu_preference } => todo!(),
-                        pop_launcher::Response::Update(list) => {
-                            self.launcher_items.splice(.., list);
-                            let unit = 48;
-                            let w = 500;
-                            return window::resize(w, 100 + unit * self.launcher_items.len() as u32);
-
-                        },
-                        pop_launcher::Response::Fill(_) => todo!(),
+                LauncherEvent::Response(response) => match response {
+                    pop_launcher::Response::Close => todo!(),
+                    pop_launcher::Response::Context { id, options } => todo!(),
+                    pop_launcher::Response::DesktopEntry {
+                        path,
+                        gpu_preference,
+                    } => todo!(),
+                    pop_launcher::Response::Update(list) => {
+                        self.launcher_items.splice(.., list);
+                        let unit = 48;
+                        let w = 600;
+                        return window::resize(w, 100 + unit * self.launcher_items.len() as u32);
                     }
+                    pop_launcher::Response::Fill(_) => todo!(),
                 },
                 LauncherEvent::Error(err) => {
                     log::error!("{}", err);
@@ -176,7 +186,8 @@ impl Application for IcedLauncher {
                     let mut cmds = Vec::new();
                     if let Some(tx) = self.tx.as_ref() {
                         let mut tx = tx.clone();
-                        let search_cmd = async move { tx.send(LauncherRequest::Search("".to_string())).await };
+                        let search_cmd =
+                            async move { tx.send(LauncherRequest::Search("".to_string())).await };
                         cmds.push(Command::perform(search_cmd, |res| match res {
                             Ok(_) => Message::SentRequest,
                             Err(err) => Message::Error(err.to_string()),
@@ -190,7 +201,8 @@ impl Application for IcedLauncher {
                     let mut cmds = Vec::new();
                     if let Some(tx) = self.tx.as_ref() {
                         let mut tx = tx.clone();
-                        let search_cmd = async move { tx.send(LauncherRequest::Search("".to_string())).await };
+                        let search_cmd =
+                            async move { tx.send(LauncherRequest::Search("".to_string())).await };
                         cmds.push(Command::perform(search_cmd, |res| match res {
                             Ok(_) => Message::SentRequest,
                             Err(err) => Message::Error(err.to_string()),
@@ -198,7 +210,17 @@ impl Application for IcedLauncher {
                     }
                     if let Some(dbus_conn) = self.dbus_conn.get() {
                         let dbus_conn = dbus_conn.clone();
-                        let cmd = async move { dbus_conn.call_method(Some("com.system76.CosmicAppletHost"), "/com/system76/CosmicAppletHost", Some("com.system76.CosmicAppletHost"), "Hide", &("com.system76.IcedLauncher")).await };
+                        let cmd = async move {
+                            dbus_conn
+                                .call_method(
+                                    Some("com.system76.CosmicAppletHost"),
+                                    "/com/system76/CosmicAppletHost",
+                                    Some("com.system76.CosmicAppletHost"),
+                                    "Hide",
+                                    &("com.system76.IcedLauncher"),
+                                )
+                                .await
+                        };
                         cmds.push(Command::perform(cmd, |res| match res {
                             Ok(_) => Message::SentRequest,
                             Err(err) => Message::Error(err.to_string()),
@@ -233,17 +255,51 @@ impl Application for IcedLauncher {
             .iter()
             .enumerate()
             .map(|(i, item)| {
-                let btn = button(
-                    text(item.name.to_string())
-                        .horizontal_alignment(Horizontal::Center)
-                        .vertical_alignment(Vertical::Center)
-                        .width(Length::Fill)
-                        .height(Length::Fill),
-                )
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .on_press(Message::Activate(Some(i)))
-                .padding(0);
+                let name = text(item.name.to_string())
+                    .horizontal_alignment(Horizontal::Left)
+                    .vertical_alignment(Vertical::Center)
+                    .width(Length::Fill)
+                    .height(Length::Fill);
+                let description = if item.description.len() > 40 {
+                    format!(
+                        "{}...",
+                        item.description[0..45.min(item.description.len())].to_string()
+                    )
+                } else {
+                    item.description.to_string()
+                };
+
+                let mut button_content = Vec::new();
+                if let (Some(icon_source), Some(_base_dirs)) =
+                    (item.category_icon.as_ref(), self.base_directories.as_ref())
+                {
+                    if let Some(icon) = svg_icon(None, icon_source, 32, 32) {
+                        button_content.push(icon.into());
+                    }
+                }
+
+                if let (Some(icon_source), Some(_base_dirs)) =
+                    (item.icon.as_ref(), self.base_directories.as_ref())
+                {
+                    if let Some(icon) = svg_icon(None, icon_source, 32, 32) {
+                        button_content.push(icon.into());
+                    }
+                }
+
+                let description = text(description)
+                    .horizontal_alignment(Horizontal::Left)
+                    .vertical_alignment(Vertical::Center)
+                    .width(Length::Fill)
+                    .height(Length::Fill);
+
+                button_content.push(column![name, description].into());
+
+                let btn = button(helpers::row(button_content))
+                    .width(Length::Fill)
+                    .height(Length::Fill)
+                    .on_press(Message::Activate(Some(i)))
+                    .padding(0);
+
                 btn.into()
             })
             .collect();
@@ -275,7 +331,7 @@ impl Application for IcedLauncher {
                 events_with(|e, status| match e {
                     iced::Event::Window(e) => Some(Message::Window(e)),
                     _ => None,
-                })
+                }),
             ]
             .into_iter(),
         )

@@ -1,6 +1,6 @@
 use futures::Stream;
 use iced::futures::{channel::mpsc, StreamExt};
-use pop_launcher::{Response, Request};
+use pop_launcher::{Request, Response};
 use std::{hash::Hash, pin::Pin};
 
 #[derive(Debug, Clone)]
@@ -80,11 +80,14 @@ impl LauncherIpc {
         tokio::spawn(async move {
             while let Some(req) = rx.next().await {
                 match req {
-                    LauncherRequest::Search(s) => {let _ = ipc_tx.send(Request::Search(s)).await;},
-                    LauncherRequest::Activate(i) => {let _ = ipc_tx.send(Request::Activate(i)).await;},
+                    LauncherRequest::Search(s) => {
+                        let _ = ipc_tx.send(Request::Search(s)).await;
+                    }
+                    LauncherRequest::Activate(i) => {
+                        let _ = ipc_tx.send(Request::Activate(i)).await;
+                    }
                 }
             }
-            
         });
         Ok(Self {
             ipc_rx: Box::pin(ipc_rx),
