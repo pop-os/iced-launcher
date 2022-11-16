@@ -1,5 +1,5 @@
-use futures::Stream;
 use cosmic::iced::futures::{channel::mpsc, StreamExt};
+use futures::Stream;
 use pop_launcher::{Request, Response};
 use std::{hash::Hash, pin::Pin};
 

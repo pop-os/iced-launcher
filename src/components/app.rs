@@ -3,34 +3,32 @@ use cosmic::iced::futures::{channel::mpsc, SinkExt};
 use cosmic::iced::subscription::events_with;
 use cosmic::iced::widget::text_input::Id;
 use cosmic::iced::widget::{button, column, container, row, text, text_input};
-use cosmic::iced::{
-    executor, window, Application, Command, Element, Length, Subscription, Theme,
-};
-use cosmic::iced_native::window::Id as SurfaceId;
+use cosmic::iced::{executor, Application, Command, Length, Subscription};
 use cosmic::iced_native::widget::helpers;
-use cosmic::{settings, iced_native};
+use cosmic::iced_native::window::Id as SurfaceId;
+use cosmic::iced_style::{application};
+use cosmic::theme::Container;
+use cosmic::widget::icon;
+use cosmic::{settings, widget, Element, Theme};
+use iced::wayland::Appearance;
+use iced::Color;
+use iced::widget::svg;
 use iced_sctk::application::SurfaceIdWrapper;
 use iced_sctk::command::platform_specific::wayland::layer_surface::SctkLayerSurfaceSettings;
-use iced_sctk::commands::layer_surface::{KeyboardInteractivity, Layer};
-use iced_sctk::event::{PlatformSpecific, wayland};
+use iced_sctk::commands;
+use iced_sctk::commands::layer_surface::{Anchor, KeyboardInteractivity, Layer};
 use iced_sctk::event::wayland::LayerEvent;
+use iced_sctk::event::{wayland, PlatformSpecific};
 use iced_sctk::settings::InitialSurface;
-use once_cell::sync::OnceCell;
-use pop_launcher::SearchResult;
+use pop_launcher::{SearchResult, IconSource};
 use xdg::BaseDirectories;
-use zbus::Connection;
 
 use crate::config;
-use crate::launcher_subscription::{launcher, LauncherEvent, LauncherRequest};
+use crate::subscriptions::launcher::{launcher, LauncherEvent, LauncherRequest};
+use crate::subscriptions::toggle_dbus::dbus_toggle;
 
 pub const NUM_LAUNCHER_ITEMS: u8 = 10;
-// SctkLayerSurfaceSettings {
-//     keyboard_interactivity: KeyboardInteractivity::OnDemand,
-//     anchor: Anchor::TOP.union(Anchor::BOTTOM),
-//     namespace: "launcher".into(),
-//     size: (Some(500), None),
-//     ..Default::default()
-// }
+
 pub fn run() -> cosmic::iced::Result {
     let mut settings = settings();
     settings.initial_surface = InitialSurface::LayerSurface(SctkLayerSurfaceSettings {
@@ -52,13 +50,14 @@ enum ThemeType {
 
 #[derive(Default, Clone)]
 struct IcedLauncher {
+    id_ctr: u64,
     tx: Option<mpsc::Sender<LauncherRequest>>,
-    theme: Theme,
     input_value: String,
     launcher_items: Vec<SearchResult>,
     selected_item: Option<usize>,
-    dbus_conn: OnceCell<Connection>,
     base_directories: Option<BaseDirectories>,
+    active_surface: Option<SurfaceId>,
+    theme: Theme,
 }
 
 #[derive(Debug, Clone)]
@@ -70,9 +69,9 @@ enum Message {
     LauncherEvent(LauncherEvent),
     SentRequest,
     Error(String),
-    DbusConn(Connection),
     Layer(LayerEvent),
-    Closed()
+    Toggle,
+    Closed,
 }
 
 impl Application for IcedLauncher {
@@ -82,20 +81,12 @@ impl Application for IcedLauncher {
     type Flags = ();
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
-        let cmd = async move { Connection::session().await };
         (
             IcedLauncher {
                 base_directories: xdg::BaseDirectories::with_prefix("icons").ok(),
                 ..Default::default()
             },
-            Command::batch(
-                vec![Command::perform(cmd, |res| match res {
-                    Ok(conn) => Message::DbusConn(conn),
-                    Err(err) => Message::Error(err.to_string()),
-                }),
-                // destroy the initial surface
-                // commands::layer_surface::destroy_layer_surface(iced_native::window::Id::new(0))
-            ]),
+            Command::none(),
         )
     }
 
@@ -163,11 +154,7 @@ impl Application for IcedLauncher {
                         gpu_preference,
                     } => todo!(),
                     pop_launcher::Response::Update(list) => {
-                        // self.launcher_items.splice(.., list);
-                        // let unit = 48;
-                        // let w = 600;
-                        // TODO resize layer sur
-                        // return window::resize(w, 100 + unit * self.launcher_items.len() as u32);
+                        self.launcher_items.splice(.., list);
                     }
                     pop_launcher::Response::Fill(_) => todo!(),
                 },
@@ -195,58 +182,60 @@ impl Application for IcedLauncher {
                 self.selected_item = i;
             }
             Message::Layer(e) => match e {
-                LayerEvent::Focused(id) => {
-                    let mut cmds = Vec::new();
-                    if let Some(tx) = self.tx.as_ref() {
-                        let mut tx = tx.clone();
-                        let search_cmd =
-                            async move { tx.send(LauncherRequest::Search("".to_string())).await };
-                        cmds.push(Command::perform(search_cmd, |res| match res {
-                            Ok(_) => Message::SentRequest,
-                            Err(err) => Message::Error(err.to_string()),
-                        }));
+                LayerEvent::Focused(_) => {}
+                LayerEvent::Unfocused(_) => {
+                    if let Some(id) = self.active_surface {
+                        return commands::layer_surface::destroy_layer_surface(id);
                     }
-                    self.input_value = "".to_string();
-                    cmds.push(text_input::focus(Id::new("launcher_entry")));
-                    return Command::batch(cmds);
-                }
-                LayerEvent::Unfocused(id) => {
-                    let mut cmds = Vec::new();
-                    if let Some(tx) = self.tx.as_ref() {
-                        let mut tx = tx.clone();
-                        let search_cmd =
-                            async move { tx.send(LauncherRequest::Search("".to_string())).await };
-                        cmds.push(Command::perform(search_cmd, |res| match res {
-                            Ok(_) => Message::SentRequest,
-                            Err(err) => Message::Error(err.to_string()),
-                        }));
-                    }
-                    if let Some(dbus_conn) = self.dbus_conn.get() {
-                        let dbus_conn = dbus_conn.clone();
-                        let cmd = async move {
-                            dbus_conn
-                                .call_method(
-                                    Some("com.system76.CosmicAppletHost"),
-                                    "/com/system76/CosmicAppletHost",
-                                    Some("com.system76.CosmicAppletHost"),
-                                    "Hide",
-                                    &("com.system76.IcedLauncher"),
-                                )
-                                .await
-                        };
-                        cmds.push(Command::perform(cmd, |res| match res {
-                            Ok(_) => Message::SentRequest,
-                            Err(err) => Message::Error(err.to_string()),
-                        }));
-                    }
-                    self.input_value = "".to_string();
-                    cmds.push(text_input::focus(Id::new("launcher_entry")));
-                    return Command::batch(cmds);
                 }
                 _ => {}
             },
-            Message::DbusConn(conn) => self.dbus_conn.set(conn).unwrap(),
-            Message::Closed() => todo!(),
+            Message::Closed => {
+                self.active_surface.take();
+                let mut cmds = Vec::new();
+                if let Some(tx) = self.tx.as_ref() {
+                    let mut tx = tx.clone();
+                    let search_cmd =
+                        async move { tx.send(LauncherRequest::Search("".to_string())).await };
+                    cmds.push(Command::perform(search_cmd, |res| match res {
+                        Ok(_) => Message::SentRequest,
+                        Err(err) => Message::Error(err.to_string()),
+                    }));
+                }
+                self.input_value = "".to_string();
+                cmds.push(text_input::focus(Id::new("launcher_entry")));
+                return Command::batch(cmds);
+            }
+            Message::Toggle => {
+                if let Some(id) = self.active_surface {
+                    return commands::layer_surface::destroy_layer_surface(id);
+                } else {
+                    self.id_ctr += 1;
+                    let mut cmds = Vec::new();
+                    if let Some(tx) = self.tx.as_ref() {
+                        let mut tx = tx.clone();
+                        let search_cmd =
+                            async move { tx.send(LauncherRequest::Search("".to_string())).await };
+                        cmds.push(Command::perform(search_cmd, |res| match res {
+                            Ok(_) => Message::SentRequest,
+                            Err(err) => Message::Error(err.to_string()),
+                        }));
+                    }
+                    self.input_value = "".to_string();
+                    cmds.push(text_input::focus(Id::new("launcher_entry")));
+                    cmds.push(commands::layer_surface::get_layer_surface(
+                        SctkLayerSurfaceSettings {
+                            id: SurfaceId::new(self.id_ctr),
+                            keyboard_interactivity: KeyboardInteractivity::OnDemand,
+                            anchor: Anchor::TOP.union(Anchor::BOTTOM),
+                            namespace: "launcher".into(),
+                            size: (Some(600), None),
+                            ..Default::default()
+                        },
+                    ));
+                    return Command::batch(cmds);
+                }
+            }
         }
         Command::none()
     }
@@ -263,7 +252,7 @@ impl Application for IcedLauncher {
             Message::InputChanged,
         )
         .on_submit(Message::Activate(None))
-        .padding(10)
+        .padding(8)
         .size(20)
         .id(Id::new("launcher_entry"));
 
@@ -277,8 +266,7 @@ impl Application for IcedLauncher {
                 let name = text(item.name.to_string())
                     .horizontal_alignment(Horizontal::Left)
                     .vertical_alignment(Vertical::Center)
-                    .width(Length::Fill)
-                    .height(Length::Fill);
+                    .width(Length::Fill);
                 let description = if item.description.len() > 40 {
                     format!(
                         "{}...",
@@ -292,51 +280,65 @@ impl Application for IcedLauncher {
                 if let (Some(icon_source), Some(_base_dirs)) =
                     (item.category_icon.as_ref(), self.base_directories.as_ref())
                 {
-                    // if let Some(icon) = svg_icon(None, false, icon_source, 32, 32) {
-                    //     button_content.push(icon.into());
-                    // }
+                    match icon_source {
+                        IconSource::Name(name) => {
+                            button_content.push(icon(name, 24).into());
+                        },
+                        IconSource::Mime(mime) => {
+                            button_content.push(icon(mime, 24).into());
+                        },
+                    }
                 }
 
                 if let (Some(icon_source), Some(_base_dirs)) =
                     (item.icon.as_ref(), self.base_directories.as_ref())
                 {
-                    // if let Some(icon) = svg_icon(None, true, icon_source, 32, 32) {
-                    //     button_content.push(icon.into());
-                    // }
+                    match icon_source {
+                        IconSource::Name(name) => {
+                            button_content.push(icon(name, 24).into());
+                        },
+                        IconSource::Mime(mime) => {
+                            button_content.push(icon(mime, 24).into());
+                        },
+                    }
                 }
 
                 let description = text(description)
                     .horizontal_alignment(Horizontal::Left)
                     .vertical_alignment(Vertical::Center)
-                    .width(Length::Fill)
-                    .height(Length::Fill);
+                    .width(Length::Fill);
 
                 button_content.push(column![name, description].into());
 
                 let btn = button(helpers::row(button_content))
                     .width(Length::Fill)
-                    .height(Length::Fill)
                     .on_press(Message::Activate(Some(i)))
-                    .padding(0);
+                    .padding([8, 16]);
 
                 btn.into()
             })
             .collect();
 
         let content = column![
-            row![launcher_entry, clear_button].spacing(10),
+            row![launcher_entry, clear_button].spacing(16),
             helpers::column(buttons).spacing(8),
         ]
-        .spacing(20)
-        .padding(20)
+        .spacing(16)
         .max_width(600);
 
-        container(content)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .center_x()
-            .center_y()
-            .into()
+        widget::widget::container(widget::widget::container(content).style(Container::Custom(
+            |theme| container::Appearance {
+                text_color: Some(theme.cosmic().on_bg_color().into()),
+                background: Some(theme.extended_palette().background.base.color.into()),
+                border_radius: 16.0,
+                border_width: 0.0,
+                border_color: Color::TRANSPARENT,
+            },
+        )).padding([16, 24]))
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .align_y(Vertical::Center)
+        .into()
     }
 
     fn subscription(&self) -> Subscription<Message> {
@@ -344,15 +346,29 @@ impl Application for IcedLauncher {
             vec![
                 launcher(0).map(|(_, msg)| Message::LauncherEvent(msg)),
                 events_with(|e, _status| match e {
-                    cosmic::iced::Event::PlatformSpecific(PlatformSpecific::Wayland(wayland::Event::Layer(e))) => Some(Message::Layer(e)),
+                    cosmic::iced::Event::PlatformSpecific(PlatformSpecific::Wayland(
+                        wayland::Event::Layer(e),
+                    )) => Some(Message::Layer(e)),
                     _ => None,
                 }),
+                dbus_toggle(1).map(|_| Message::Toggle),
             ]
             .into_iter(),
         )
     }
 
-    fn close_requested(&self, id: iced_sctk::application::SurfaceIdWrapper) -> Self::Message {
-        todo!()
+    fn style(&self) -> <Self::Theme as application::StyleSheet>::Style {
+        <Self::Theme as application::StyleSheet>::Style::Custom(|theme| Appearance {
+            background_color: Color::from_rgba(0.0, 0.0, 0.0, 0.0),
+            text_color: theme.cosmic().on_bg_color().into(),
+        })
+    }
+
+    fn theme(&self) -> Theme {
+        self.theme
+    }
+
+    fn close_requested(&self, _id: iced_sctk::application::SurfaceIdWrapper) -> Self::Message {
+        Message::Closed
     }
 }

@@ -1,0 +1,1 @@
+busctl --user call com.system76.IcedLauncher /com/system76/IcedLauncher com.system76.IcedLauncher Toggle

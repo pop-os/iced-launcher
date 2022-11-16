@@ -1,8 +1,8 @@
 mod components;
 #[rustfmt::skip]
 mod config;
-mod launcher_subscription;
 mod localize;
+mod subscriptions;
 use config::APP_ID;
 use log::info;
 
