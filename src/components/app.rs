@@ -6,13 +6,13 @@ use cosmic::iced::widget::{button, column, container, row, text, text_input};
 use cosmic::iced::{executor, Application, Command, Length, Subscription};
 use cosmic::iced_native::widget::helpers;
 use cosmic::iced_native::window::Id as SurfaceId;
-use cosmic::iced_style::{application};
-use cosmic::theme::Container;
+use cosmic::iced_style::application;
+use cosmic::theme::{Button, Container};
 use cosmic::widget::icon;
 use cosmic::{settings, widget, Element, Theme};
 use iced::wayland::Appearance;
-use iced::Color;
 use iced::widget::svg;
+use iced::Color;
 use iced_sctk::application::SurfaceIdWrapper;
 use iced_sctk::command::platform_specific::wayland::layer_surface::SctkLayerSurfaceSettings;
 use iced_sctk::commands;
@@ -20,7 +20,7 @@ use iced_sctk::commands::layer_surface::{Anchor, KeyboardInteractivity, Layer};
 use iced_sctk::event::wayland::LayerEvent;
 use iced_sctk::event::{wayland, PlatformSpecific};
 use iced_sctk::settings::InitialSurface;
-use pop_launcher::{SearchResult, IconSource};
+use pop_launcher::{IconSource, SearchResult};
 use xdg::BaseDirectories;
 
 use crate::config;
@@ -265,8 +265,7 @@ impl Application for IcedLauncher {
             .map(|(i, item)| {
                 let name = text(item.name.to_string())
                     .horizontal_alignment(Horizontal::Left)
-                    .vertical_alignment(Vertical::Center)
-                    .width(Length::Fill);
+                    .vertical_alignment(Vertical::Center);
                 let description = if item.description.len() > 40 {
                     format!(
                         "{}...",
@@ -283,10 +282,10 @@ impl Application for IcedLauncher {
                     match icon_source {
                         IconSource::Name(name) => {
                             button_content.push(icon(name, 24).into());
-                        },
+                        }
                         IconSource::Mime(mime) => {
                             button_content.push(icon(mime, 24).into());
-                        },
+                        }
                     }
                 }
 
@@ -296,24 +295,36 @@ impl Application for IcedLauncher {
                     match icon_source {
                         IconSource::Name(name) => {
                             button_content.push(icon(name, 24).into());
-                        },
+                        }
                         IconSource::Mime(mime) => {
                             button_content.push(icon(mime, 24).into());
-                        },
+                        }
                     }
                 }
 
                 let description = text(description)
                     .horizontal_alignment(Horizontal::Left)
-                    .vertical_alignment(Vertical::Center)
-                    .width(Length::Fill);
+                    .vertical_alignment(Vertical::Center);
 
                 button_content.push(column![name, description].into());
+                button_content.push(
+                    container(
+                        text(format!("Ctrl + {i}"))
+                            .vertical_alignment(Vertical::Center)
+                            .horizontal_alignment(Horizontal::Right),
+                    )
+                    .width(Length::Fill)
+                    .center_y()
+                    .align_y(Vertical::Center)
+                    .align_x(Horizontal::Right)
+                    .into(),
+                );
 
-                let btn = button(helpers::row(button_content))
+                let btn = button(helpers::row(button_content).spacing(8))
                     .width(Length::Fill)
                     .on_press(Message::Activate(Some(i)))
-                    .padding([8, 16]);
+                    .padding([8, 16])
+                    .style(Button::Text);
 
                 btn.into()
             })
@@ -326,15 +337,17 @@ impl Application for IcedLauncher {
         .spacing(16)
         .max_width(600);
 
-        widget::widget::container(widget::widget::container(content).style(Container::Custom(
-            |theme| container::Appearance {
-                text_color: Some(theme.cosmic().on_bg_color().into()),
-                background: Some(theme.extended_palette().background.base.color.into()),
-                border_radius: 16.0,
-                border_width: 0.0,
-                border_color: Color::TRANSPARENT,
-            },
-        )).padding([16, 24]))
+        widget::widget::container(
+            widget::widget::container(content)
+                .style(Container::Custom(|theme| container::Appearance {
+                    text_color: Some(theme.cosmic().on_bg_color().into()),
+                    background: Some(theme.extended_palette().background.base.color.into()),
+                    border_radius: 16.0,
+                    border_width: 0.0,
+                    border_color: Color::TRANSPARENT,
+                }))
+                .padding([16, 24]),
+        )
         .width(Length::Fill)
         .height(Length::Fill)
         .align_y(Vertical::Center)
