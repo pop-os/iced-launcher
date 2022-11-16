@@ -1,5 +1,5 @@
 use futures::Stream;
-use iced::futures::{channel::mpsc, StreamExt};
+use cosmic::iced::futures::{channel::mpsc, StreamExt};
 use pop_launcher::{Request, Response};
 use std::{hash::Hash, pin::Pin};
 
@@ -18,8 +18,8 @@ pub enum LauncherEvent {
 
 pub fn launcher<I: 'static + Hash + Copy + Send + Sync>(
     id: I,
-) -> iced::Subscription<(I, LauncherEvent)> {
-    use iced::subscription;
+) -> cosmic::iced::Subscription<(I, LauncherEvent)> {
+    use cosmic::iced::subscription;
 
     subscription::unfold(id, State::Ready, move |state| _launcher(id, state))
 }
@@ -58,7 +58,7 @@ async fn _launcher<I: Copy>(id: I, state: State) -> (Option<(I, LauncherEvent)>,
                 )
             }
         }
-        State::Error => iced::futures::future::pending().await,
+        State::Error => cosmic::iced::futures::future::pending().await,
     }
 }
 

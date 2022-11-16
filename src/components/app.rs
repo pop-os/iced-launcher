@@ -1,15 +1,20 @@
-use adw_user_colors_lib::notify::*;
-use iced::alignment::{Horizontal, Vertical};
-use iced::futures::{channel::mpsc, SinkExt};
-use iced::subscription::events_with;
-use iced::theme::palette::Extended;
-use iced::theme::Palette;
-use iced::widget::text_input::Id;
-use iced::widget::{button, column, container, row, text, text_input};
-use iced::{
-    executor, window, Application, Command, Element, Length, Settings, Subscription, Theme,
+use cosmic::iced::alignment::{Horizontal, Vertical};
+use cosmic::iced::futures::{channel::mpsc, SinkExt};
+use cosmic::iced::subscription::events_with;
+use cosmic::iced::widget::text_input::Id;
+use cosmic::iced::widget::{button, column, container, row, text, text_input};
+use cosmic::iced::{
+    executor, window, Application, Command, Element, Length, Subscription, Theme,
 };
-use iced_native::widget::helpers;
+use cosmic::iced_native::window::Id as SurfaceId;
+use cosmic::iced_native::widget::helpers;
+use cosmic::{settings, iced_native};
+use iced_sctk::application::SurfaceIdWrapper;
+use iced_sctk::command::platform_specific::wayland::layer_surface::SctkLayerSurfaceSettings;
+use iced_sctk::commands::layer_surface::{KeyboardInteractivity, Layer};
+use iced_sctk::event::{PlatformSpecific, wayland};
+use iced_sctk::event::wayland::LayerEvent;
+use iced_sctk::settings::InitialSurface;
 use once_cell::sync::OnceCell;
 use pop_launcher::SearchResult;
 use xdg::BaseDirectories;
@@ -17,16 +22,25 @@ use zbus::Connection;
 
 use crate::config;
 use crate::launcher_subscription::{launcher, LauncherEvent, LauncherRequest};
-use crate::util::{image_icon, svg_icon};
 
 pub const NUM_LAUNCHER_ITEMS: u8 = 10;
-
-pub fn run() -> iced::Result {
-    let mut settings = Settings::default();
-    settings.window.decorations = false;
-    settings.window.decorations = false;
-    settings.window.size = (600, 120);
-    IcedLauncher::run(settings)
+// SctkLayerSurfaceSettings {
+//     keyboard_interactivity: KeyboardInteractivity::OnDemand,
+//     anchor: Anchor::TOP.union(Anchor::BOTTOM),
+//     namespace: "launcher".into(),
+//     size: (Some(500), None),
+//     ..Default::default()
+// }
+pub fn run() -> cosmic::iced::Result {
+    let mut settings = settings();
+    settings.initial_surface = InitialSurface::LayerSurface(SctkLayerSurfaceSettings {
+        keyboard_interactivity: KeyboardInteractivity::None,
+        namespace: "ignore".into(),
+        size: (Some(1), Some(1)),
+        layer: Layer::Background,
+        ..Default::default()
+    });
+    IcedLauncher::run(settings.into())
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -49,7 +63,6 @@ struct IcedLauncher {
 
 #[derive(Debug, Clone)]
 enum Message {
-    PaletteChanged(Palette),
     InputChanged(String),
     Activate(Option<usize>),
     Select(Option<usize>),
@@ -57,8 +70,9 @@ enum Message {
     LauncherEvent(LauncherEvent),
     SentRequest,
     Error(String),
-    Window(iced_native::window::Event),
     DbusConn(Connection),
+    Layer(LayerEvent),
+    Closed()
 }
 
 impl Application for IcedLauncher {
@@ -74,10 +88,14 @@ impl Application for IcedLauncher {
                 base_directories: xdg::BaseDirectories::with_prefix("icons").ok(),
                 ..Default::default()
             },
-            Command::perform(cmd, |res| match res {
-                Ok(conn) => Message::DbusConn(conn),
-                Err(err) => Message::Error(err.to_string()),
-            }),
+            Command::batch(
+                vec![Command::perform(cmd, |res| match res {
+                    Ok(conn) => Message::DbusConn(conn),
+                    Err(err) => Message::Error(err.to_string()),
+                }),
+                // destroy the initial surface
+                // commands::layer_surface::destroy_layer_surface(iced_native::window::Id::new(0))
+            ]),
         )
     }
 
@@ -87,12 +105,6 @@ impl Application for IcedLauncher {
 
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
-            Message::PaletteChanged(palette) => {
-                self.theme = Theme::Custom {
-                    palette,
-                    extended: Extended::generate(palette),
-                }
-            }
             Message::InputChanged(value) => {
                 self.input_value = value.clone();
                 if let Some(tx) = self.tx.as_ref() {
@@ -151,10 +163,11 @@ impl Application for IcedLauncher {
                         gpu_preference,
                     } => todo!(),
                     pop_launcher::Response::Update(list) => {
-                        self.launcher_items.splice(.., list);
-                        let unit = 48;
-                        let w = 600;
-                        return window::resize(w, 100 + unit * self.launcher_items.len() as u32);
+                        // self.launcher_items.splice(.., list);
+                        // let unit = 48;
+                        // let w = 600;
+                        // TODO resize layer sur
+                        // return window::resize(w, 100 + unit * self.launcher_items.len() as u32);
                     }
                     pop_launcher::Response::Fill(_) => todo!(),
                 },
@@ -181,8 +194,8 @@ impl Application for IcedLauncher {
             Message::Select(i) => {
                 self.selected_item = i;
             }
-            Message::Window(e) => match e {
-                iced_native::window::Event::Focused => {
+            Message::Layer(e) => match e {
+                LayerEvent::Focused(id) => {
                     let mut cmds = Vec::new();
                     if let Some(tx) = self.tx.as_ref() {
                         let mut tx = tx.clone();
@@ -197,7 +210,7 @@ impl Application for IcedLauncher {
                     cmds.push(text_input::focus(Id::new("launcher_entry")));
                     return Command::batch(cmds);
                 }
-                iced_native::window::Event::Unfocused => {
+                LayerEvent::Unfocused(id) => {
                     let mut cmds = Vec::new();
                     if let Some(tx) = self.tx.as_ref() {
                         let mut tx = tx.clone();
@@ -233,11 +246,17 @@ impl Application for IcedLauncher {
                 _ => {}
             },
             Message::DbusConn(conn) => self.dbus_conn.set(conn).unwrap(),
+            Message::Closed() => todo!(),
         }
         Command::none()
     }
 
-    fn view(&self) -> Element<Message> {
+    fn view(&self, id: SurfaceIdWrapper) -> Element<Message> {
+        if id.inner() == SurfaceId::new(0) {
+            // TODO just delete the original surface if possible
+            return text("").into();
+        }
+
         let launcher_entry = text_input(
             "Type something...",
             &self.input_value,
@@ -273,17 +292,17 @@ impl Application for IcedLauncher {
                 if let (Some(icon_source), Some(_base_dirs)) =
                     (item.category_icon.as_ref(), self.base_directories.as_ref())
                 {
-                    if let Some(icon) = svg_icon(None, icon_source, 32, 32) {
-                        button_content.push(icon.into());
-                    }
+                    // if let Some(icon) = svg_icon(None, false, icon_source, 32, 32) {
+                    //     button_content.push(icon.into());
+                    // }
                 }
 
                 if let (Some(icon_source), Some(_base_dirs)) =
                     (item.icon.as_ref(), self.base_directories.as_ref())
                 {
-                    if let Some(icon) = svg_icon(None, icon_source, 32, 32) {
-                        button_content.push(icon.into());
-                    }
+                    // if let Some(icon) = svg_icon(None, true, icon_source, 32, 32) {
+                    //     button_content.push(icon.into());
+                    // }
                 }
 
                 let description = text(description)
@@ -323,13 +342,9 @@ impl Application for IcedLauncher {
     fn subscription(&self) -> Subscription<Message> {
         Subscription::batch(
             vec![
-                theme(0).map(|(_, theme_update)| match theme_update {
-                    ThemeUpdate::Palette(palette) => Message::PaletteChanged(palette),
-                    ThemeUpdate::Errored => Message::Error("Theme update error!".to_string()),
-                }),
                 launcher(0).map(|(_, msg)| Message::LauncherEvent(msg)),
-                events_with(|e, status| match e {
-                    iced::Event::Window(e) => Some(Message::Window(e)),
+                events_with(|e, _status| match e {
+                    cosmic::iced::Event::PlatformSpecific(PlatformSpecific::Wayland(wayland::Event::Layer(e))) => Some(Message::Layer(e)),
                     _ => None,
                 }),
             ]
@@ -337,7 +352,7 @@ impl Application for IcedLauncher {
         )
     }
 
-    fn theme(&self) -> Theme {
-        self.theme
+    fn close_requested(&self, id: iced_sctk::application::SurfaceIdWrapper) -> Self::Message {
+        todo!()
     }
 }

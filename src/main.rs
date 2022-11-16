@@ -3,7 +3,6 @@ mod components;
 mod config;
 mod launcher_subscription;
 mod localize;
-mod util;
 use config::APP_ID;
 use log::info;
 
@@ -14,7 +13,7 @@ use crate::{
     config::{PROFILE, VERSION},
 };
 
-fn main() -> iced::Result {
+fn main() -> cosmic::iced::Result {
     // Initialize logger
     pretty_env_logger::init();
     info!("Iced Launcher ({})", APP_ID);
