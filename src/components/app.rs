@@ -118,12 +118,10 @@ impl Application for IcedLauncher {
                     let mut tx = tx.clone();
                     let id = item.id;
                     let cmd = async move { tx.send(LauncherRequest::Activate(id)).await };
-                    return Command::batch(vec![
-                        Command::perform(cmd, |res| match res {
-                            Ok(_) => Message::Hide,
-                            Err(err) => Message::Error(err.to_string()),
-                        }),
-                    ]);
+                    return Command::batch(vec![Command::perform(cmd, |res| match res {
+                        Ok(_) => Message::Hide,
+                        Err(err) => Message::Error(err.to_string()),
+                    })]);
                 }
             }
             Message::Activate(None) => {
@@ -156,10 +154,10 @@ impl Application for IcedLauncher {
                 LauncherEvent::Response(response) => match response {
                     pop_launcher::Response::Close => {
                         exit(0);
-                    },
+                    }
                     pop_launcher::Response::Context { id, options } => {
                         // TODO ASHLEY
-                    },
+                    }
                     pop_launcher::Response::DesktopEntry {
                         path,
                         gpu_preference,
@@ -178,18 +176,16 @@ impl Application for IcedLauncher {
                                     cmd.arg(arg);
                                 }
                                 let _ = cmd.spawn();
-                                return Command::perform(async {}, |_| {
-                                    Message::Hide
-                                });
+                                return Command::perform(async {}, |_| Message::Hide);
                             }
                         }
-                    },
+                    }
                     pop_launcher::Response::Update(list) => {
                         self.launcher_items.splice(.., list);
                     }
                     pop_launcher::Response::Fill(s) => {
                         self.input_value = s;
-                    },
+                    }
                 },
                 LauncherEvent::Error(err) => {
                     log::error!("{}", err);
@@ -274,7 +270,7 @@ impl Application for IcedLauncher {
                 if let Some(id) = self.active_surface {
                     return commands::layer_surface::destroy_layer_surface(id);
                 }
-            },
+            }
         }
         Command::none()
     }
