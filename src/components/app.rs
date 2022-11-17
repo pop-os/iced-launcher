@@ -1,3 +1,6 @@
+use std::fs;
+use std::process::exit;
+
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::futures::{channel::mpsc, SinkExt};
 use cosmic::iced::subscription::events_with;
@@ -10,6 +13,7 @@ use cosmic::iced_style::{self, application};
 use cosmic::theme::{Button, Container, Svg};
 use cosmic::widget::{icon, image_icon};
 use cosmic::{settings, widget, Element, Theme};
+use freedesktop_desktop_entry::DesktopEntry;
 use iced::wayland::Appearance;
 use iced::widget::svg;
 use iced::Color;
@@ -64,7 +68,7 @@ struct IcedLauncher {
 enum Message {
     InputChanged(String),
     Activate(Option<usize>),
-    Activated,
+    Hide,
     Select(Option<usize>),
     Clear,
     LauncherEvent(LauncherEvent),
@@ -116,7 +120,7 @@ impl Application for IcedLauncher {
                     let cmd = async move { tx.send(LauncherRequest::Activate(id)).await };
                     return Command::batch(vec![
                         Command::perform(cmd, |res| match res {
-                            Ok(_) => Message::Activated,
+                            Ok(_) => Message::Hide,
                             Err(err) => Message::Error(err.to_string()),
                         }),
                     ]);
@@ -150,16 +154,42 @@ impl Application for IcedLauncher {
                     });
                 }
                 LauncherEvent::Response(response) => match response {
-                    pop_launcher::Response::Close => todo!(),
-                    pop_launcher::Response::Context { id, options } => todo!(),
+                    pop_launcher::Response::Close => {
+                        exit(0);
+                    },
+                    pop_launcher::Response::Context { id, options } => {
+                        // TODO ASHLEY
+                    },
                     pop_launcher::Response::DesktopEntry {
                         path,
                         gpu_preference,
-                    } => todo!(),
+                    } => {
+                        if let Ok(bytes) = fs::read_to_string(&path) {
+                            if let Ok(entry) = DesktopEntry::decode(&path, &bytes) {
+                                let mut exec = match entry.exec() {
+                                    Some(exec_str) => shlex::Shlex::new(exec_str),
+                                    None => return Command::none(),
+                                };
+                                let mut cmd = match exec.next() {
+                                    Some(cmd) => tokio::process::Command::new(cmd),
+                                    None => return Command::none(),
+                                };
+                                for arg in exec {
+                                    cmd.arg(arg);
+                                }
+                                let _ = cmd.spawn();
+                                return Command::perform(async {}, |_| {
+                                    Message::Hide
+                                });
+                            }
+                        }
+                    },
                     pop_launcher::Response::Update(list) => {
                         self.launcher_items.splice(.., list);
                     }
-                    pop_launcher::Response::Fill(_) => todo!(),
+                    pop_launcher::Response::Fill(s) => {
+                        self.input_value = s;
+                    },
                 },
                 LauncherEvent::Error(err) => {
                     log::error!("{}", err);
@@ -240,7 +270,7 @@ impl Application for IcedLauncher {
                     return Command::batch(cmds);
                 }
             }
-            Message::Activated => {
+            Message::Hide => {
                 if let Some(id) = self.active_surface {
                     return commands::layer_surface::destroy_layer_surface(id);
                 }
