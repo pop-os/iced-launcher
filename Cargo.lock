@@ -1529,8 +1529,8 @@ dependencies = [
 
 [[package]]
 name = "iced"
-version = "0.5.1"
-source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#186f45ab384fde560bb0ecd486231adba061846f"
+version = "0.5.2"
+source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#6c51969025a8e6f49a7b9f0cb55871ae041aa449"
 dependencies = [
  "iced_core",
  "iced_futures",
@@ -1571,8 +1571,8 @@ dependencies = [
 
 [[package]]
 name = "iced_core"
-version = "0.6.0"
-source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#186f45ab384fde560bb0ecd486231adba061846f"
+version = "0.6.1"
+source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#6c51969025a8e6f49a7b9f0cb55871ae041aa449"
 dependencies = [
  "bitflags",
  "palette",
@@ -1581,8 +1581,8 @@ dependencies = [
 
 [[package]]
 name = "iced_futures"
-version = "0.5.0"
-source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#186f45ab384fde560bb0ecd486231adba061846f"
+version = "0.5.1"
+source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#6c51969025a8e6f49a7b9f0cb55871ae041aa449"
 dependencies = [
  "futures",
  "log",
@@ -1593,8 +1593,8 @@ dependencies = [
 
 [[package]]
 name = "iced_glow"
-version = "0.4.0"
-source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#186f45ab384fde560bb0ecd486231adba061846f"
+version = "0.4.1"
+source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#6c51969025a8e6f49a7b9f0cb55871ae041aa449"
 dependencies = [
  "bytemuck",
  "euclid",
@@ -1609,7 +1609,7 @@ dependencies = [
 [[package]]
 name = "iced_graphics"
 version = "0.4.0"
-source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#186f45ab384fde560bb0ecd486231adba061846f"
+source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#6c51969025a8e6f49a7b9f0cb55871ae041aa449"
 dependencies = [
  "bitflags",
  "bytemuck",
@@ -1629,7 +1629,7 @@ dependencies = [
 [[package]]
 name = "iced_lazy"
 version = "0.2.0"
-source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#186f45ab384fde560bb0ecd486231adba061846f"
+source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#6c51969025a8e6f49a7b9f0cb55871ae041aa449"
 dependencies = [
  "iced_native",
  "ouroboros",
@@ -1637,8 +1637,8 @@ dependencies = [
 
 [[package]]
 name = "iced_native"
-version = "0.6.0"
-source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#186f45ab384fde560bb0ecd486231adba061846f"
+version = "0.6.1"
+source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#6c51969025a8e6f49a7b9f0cb55871ae041aa449"
 dependencies = [
  "iced_core",
  "iced_futures",
@@ -1652,7 +1652,7 @@ dependencies = [
 [[package]]
 name = "iced_sctk"
 version = "0.1.0"
-source = "git+https://github.com/pop-os/iced-sctk#0d58dcbb589ef2edb88694bea7a7e13b08d3eecb"
+source = "git+https://github.com/pop-os/iced-sctk#c2095c8a434f921903f9801d6df11020466d32e5"
 dependencies = [
  "enum-repr",
  "futures",
@@ -1671,7 +1671,7 @@ dependencies = [
 [[package]]
 name = "iced_style"
 version = "0.5.0"
-source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#186f45ab384fde560bb0ecd486231adba061846f"
+source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#6c51969025a8e6f49a7b9f0cb55871ae041aa449"
 dependencies = [
  "iced_core",
  "once_cell",
@@ -1680,8 +1680,8 @@ dependencies = [
 
 [[package]]
 name = "iced_wgpu"
-version = "0.6.0"
-source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#186f45ab384fde560bb0ecd486231adba061846f"
+version = "0.6.1"
+source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#6c51969025a8e6f49a7b9f0cb55871ae041aa449"
 dependencies = [
  "bitflags",
  "bytemuck",
@@ -1725,9 +1725,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "1.9.1"
+version = "1.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10a35a97730320ffe8e2d410b5d3b69279b98d2c14bdb8b70ea89ecf7888d41e"
+checksum = "1885e79c1fc4b10f0e172c475f458b7f7b93061064d98c3293e98c5ba0c8b399"
 dependencies = [
  "autocfg",
  "hashbrown",
@@ -1857,7 +1857,7 @@ checksum = "fc7fcc620a3bff7cdd7a365be3376c97191aeaccc2a603e600951e452615bf89"
 [[package]]
 name = "libcosmic"
 version = "0.1.0"
-source = "git+https://github.com/pop-os/libcosmic/?branch=sctk-cosmic-design-system#33779b865253e7f2a14ac376de9ff25770ecd322"
+source = "git+https://github.com/pop-os/libcosmic/?branch=sctk-cosmic-design-system#3850def414c18d7cdfc29bfa7aa5e53199b1889c"
 dependencies = [
  "apply",
  "cosmic-theme",

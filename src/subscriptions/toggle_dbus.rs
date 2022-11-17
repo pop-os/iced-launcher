@@ -9,9 +9,7 @@ use zbus::{dbus_interface, Connection, ConnectionBuilder};
 pub fn dbus_toggle<I: 'static + Hash + Copy + Send + Sync + Debug>(
     id: I,
 ) -> iced::Subscription<(I, LauncherDbusEvent)> {
-    subscription::unfold(id, State::Ready, move |state| {
-        start_listening(id, state)
-    })
+    subscription::unfold(id, State::Ready, move |state| start_listening(id, state))
 }
 
 #[derive(Debug)]
@@ -42,7 +40,10 @@ async fn start_listening<I: Copy>(id: I, state: State) -> (Option<(I, LauncherDb
         }
         State::Waiting(conn, mut rx) => {
             if let Some(LauncherDbusEvent::Toggle) = rx.next().await {
-                (Some((id, LauncherDbusEvent::Toggle)), State::Waiting(conn, rx))
+                (
+                    Some((id, LauncherDbusEvent::Toggle)),
+                    State::Waiting(conn, rx),
+                )
             } else {
                 (None, State::Finished)
             }

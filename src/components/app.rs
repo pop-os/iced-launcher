@@ -6,9 +6,9 @@ use cosmic::iced::widget::{button, column, container, row, text, text_input};
 use cosmic::iced::{executor, Application, Command, Length, Subscription};
 use cosmic::iced_native::widget::helpers;
 use cosmic::iced_native::window::Id as SurfaceId;
-use cosmic::iced_style::application;
-use cosmic::theme::{Button, Container};
-use cosmic::widget::icon;
+use cosmic::iced_style::{self, application};
+use cosmic::theme::{Button, Container, Svg};
+use cosmic::widget::{icon, image_icon};
 use cosmic::{settings, widget, Element, Theme};
 use iced::wayland::Appearance;
 use iced::widget::svg;
@@ -266,10 +266,7 @@ impl Application for IcedLauncher {
                     .horizontal_alignment(Horizontal::Left)
                     .vertical_alignment(Vertical::Center);
                 let description = if item.description.len() > 40 {
-                    format!(
-                        "{}...",
-                        item.description[0..45.min(item.description.len())].to_string()
-                    )
+                    format!("{:.45}...", item.description)
                 } else {
                     item.description.to_string()
                 };
@@ -280,10 +277,18 @@ impl Application for IcedLauncher {
                 {
                     match icon_source {
                         IconSource::Name(name) => {
-                            button_content.push(icon(name, 24).into());
+                            button_content.push(icon(name, 24).style(Svg::Custom(|theme| iced_style::svg::Appearance {
+                                fill: Some(theme.palette().text),
+                            })).into());
                         }
                         IconSource::Mime(mime) => {
-                            button_content.push(icon(mime, 24).into());
+                            button_content.push(
+                                icon(mime, 24)
+                                    .style(Svg::Custom(|theme| iced_style::svg::Appearance {
+                                        fill: Some(theme.palette().text),
+                                    }))
+                                    .into(),
+                            );
                         }
                     }
                 }
@@ -293,10 +298,18 @@ impl Application for IcedLauncher {
                 {
                     match icon_source {
                         IconSource::Name(name) => {
-                            button_content.push(icon(name, 24).into());
+                            if let Some(image) = image_icon(name, 24) {
+                                button_content.push(image.into());
+                            }
                         }
                         IconSource::Mime(mime) => {
-                            button_content.push(icon(mime, 24).into());
+                            button_content.push(
+                                icon(mime, 24)
+                                    .style(Svg::Custom(|theme| iced_style::svg::Appearance {
+                                        fill: Some(theme.palette().text),
+                                    }))
+                                    .into(),
+                            );
                         }
                     }
                 }
@@ -357,7 +370,7 @@ impl Application for IcedLauncher {
         Subscription::batch(
             vec![
                 dbus_toggle(0).map(|e| match e {
-                    (_, LauncherDbusEvent::Toggle) => Message::Toggle
+                    (_, LauncherDbusEvent::Toggle) => Message::Toggle,
                 }),
                 launcher(0).map(|(_, msg)| Message::LauncherEvent(msg)),
                 events_with(|e, _status| match e {
