@@ -64,6 +64,7 @@ struct IcedLauncher {
 enum Message {
     InputChanged(String),
     Activate(Option<usize>),
+    Activated,
     Select(Option<usize>),
     Clear,
     LauncherEvent(LauncherEvent),
@@ -113,10 +114,12 @@ impl Application for IcedLauncher {
                     let mut tx = tx.clone();
                     let id = item.id;
                     let cmd = async move { tx.send(LauncherRequest::Activate(id)).await };
-                    return Command::perform(cmd, |res| match res {
-                        Ok(_) => Message::SentRequest,
-                        Err(err) => Message::Error(err.to_string()),
-                    });
+                    return Command::batch(vec![
+                        Command::perform(cmd, |res| match res {
+                            Ok(_) => Message::Activated,
+                            Err(err) => Message::Error(err.to_string()),
+                        }),
+                    ]);
                 }
             }
             Message::Activate(None) => {
@@ -221,10 +224,12 @@ impl Application for IcedLauncher {
                         }));
                     }
                     self.input_value = "".to_string();
+                    let id = SurfaceId::new(self.id_ctr);
+                    self.active_surface.replace(id);
                     cmds.push(text_input::focus(Id::new("launcher_entry")));
                     cmds.push(commands::layer_surface::get_layer_surface(
                         SctkLayerSurfaceSettings {
-                            id: SurfaceId::new(self.id_ctr),
+                            id,
                             keyboard_interactivity: KeyboardInteractivity::OnDemand,
                             anchor: Anchor::TOP.union(Anchor::BOTTOM),
                             namespace: "launcher".into(),
@@ -235,6 +240,11 @@ impl Application for IcedLauncher {
                     return Command::batch(cmds);
                 }
             }
+            Message::Activated => {
+                if let Some(id) = self.active_surface {
+                    return commands::layer_surface::destroy_layer_surface(id);
+                }
+            },
         }
         Command::none()
     }
@@ -277,9 +287,13 @@ impl Application for IcedLauncher {
                 {
                     match icon_source {
                         IconSource::Name(name) => {
-                            button_content.push(icon(name, 24).style(Svg::Custom(|theme| iced_style::svg::Appearance {
-                                fill: Some(theme.palette().text),
-                            })).into());
+                            button_content.push(
+                                icon(name, 24)
+                                    .style(Svg::Custom(|theme| iced_style::svg::Appearance {
+                                        fill: Some(theme.palette().text),
+                                    }))
+                                    .into(),
+                            );
                         }
                         IconSource::Mime(mime) => {
                             button_content.push(
