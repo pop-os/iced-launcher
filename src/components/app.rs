@@ -25,7 +25,7 @@ use xdg::BaseDirectories;
 
 use crate::config;
 use crate::subscriptions::launcher::{launcher, LauncherEvent, LauncherRequest};
-use crate::subscriptions::toggle_dbus::dbus_toggle;
+use crate::subscriptions::toggle_dbus::{dbus_toggle, LauncherDbusEvent};
 
 pub const NUM_LAUNCHER_ITEMS: u8 = 10;
 
@@ -356,6 +356,9 @@ impl Application for IcedLauncher {
     fn subscription(&self) -> Subscription<Message> {
         Subscription::batch(
             vec![
+                dbus_toggle(0).map(|e| match e {
+                    (_, LauncherDbusEvent::Toggle) => Message::Toggle
+                }),
                 launcher(0).map(|(_, msg)| Message::LauncherEvent(msg)),
                 events_with(|e, _status| match e {
                     cosmic::iced::Event::PlatformSpecific(PlatformSpecific::Wayland(
@@ -363,7 +366,6 @@ impl Application for IcedLauncher {
                     )) => Some(Message::Layer(e)),
                     _ => None,
                 }),
-                dbus_toggle(1).map(|_| Message::Toggle),
             ]
             .into_iter(),
         )
