@@ -164,7 +164,6 @@ impl Application for IcedLauncher {
             },
             Message::Clear => {
                 self.input_value.clear();
-                self.launcher_items.clear();
                 if let Some(tx) = self.tx.as_ref() {
                     let mut tx = tx.clone();
                     let cmd = async move { tx.send(LauncherRequest::Search("".to_string())).await };
