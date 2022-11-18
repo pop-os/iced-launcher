@@ -1696,7 +1696,7 @@ dependencies = [
 [[package]]
 name = "iced_sctk"
 version = "0.1.0"
-source = "git+https://github.com/pop-os/iced-sctk#c2f050bc68631f9b1668838f036aec521425132f"
+source = "git+https://github.com/pop-os/iced-sctk#f85fed5f19eaf41eff80298b4f57f7e09c3df751"
 dependencies = [
  "enum-repr",
  "futures",
@@ -1901,7 +1901,7 @@ checksum = "fc7fcc620a3bff7cdd7a365be3376c97191aeaccc2a603e600951e452615bf89"
 [[package]]
 name = "libcosmic"
 version = "0.1.0"
-source = "git+https://github.com/pop-os/libcosmic/?branch=sctk-cosmic-design-system#3850def414c18d7cdfc29bfa7aa5e53199b1889c"
+source = "git+https://github.com/pop-os/libcosmic/?branch=sctk-cosmic-design-system#a8c753d4293a5e103da2d32b21d40da195a3e9f7"
 dependencies = [
  "apply",
  "cosmic-theme",

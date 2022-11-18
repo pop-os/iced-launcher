@@ -211,9 +211,10 @@ impl Application for IcedLauncher {
                 self.selected_item = i;
             }
             Message::Layer(e) => match e {
-                LayerEvent::Focused(_) => {}
+                LayerEvent::Focused(_) => {
+                    return text_input::focus(Id::new("launcher_entry"));
+                }
                 LayerEvent::Unfocused(_) => {
-                    dbg!("unfocused");
                     if let Some(id) = self.active_surface {
                         return commands::layer_surface::destroy_layer_surface(id);
                     }
@@ -258,7 +259,7 @@ impl Application for IcedLauncher {
                     cmds.push(commands::layer_surface::get_layer_surface(
                         SctkLayerSurfaceSettings {
                             id,
-                            keyboard_interactivity: KeyboardInteractivity::OnDemand,
+                            keyboard_interactivity: KeyboardInteractivity::Exclusive,
                             anchor: Anchor::TOP.union(Anchor::BOTTOM),
                             namespace: "launcher".into(),
                             size: (Some(600), None),
@@ -391,7 +392,8 @@ impl Application for IcedLauncher {
         .spacing(16)
         .max_width(600);
 
-        widget::widget::container(
+        column![
+            button(text("")).height(Length::Fill).width(Length::Fill).on_press(Message::Hide).style(Button::Transparent),
             widget::widget::container(content)
                 .style(Container::Custom(|theme| container::Appearance {
                     text_color: Some(theme.cosmic().on_bg_color().into()),
@@ -401,10 +403,10 @@ impl Application for IcedLauncher {
                     border_color: Color::TRANSPARENT,
                 }))
                 .padding([16, 24]),
-        )
+            button(text("")).height(Length::Fill).width(Length::Fill).on_press(Message::Hide).style(Button::Transparent),
+            ]
         .width(Length::Fill)
         .height(Length::Fill)
-        .align_y(Vertical::Center)
         .into()
     }
 
@@ -419,13 +421,48 @@ impl Application for IcedLauncher {
                     cosmic::iced::Event::PlatformSpecific(PlatformSpecific::Wayland(
                         wayland::Event::Layer(e),
                     )) => Some(Message::Layer(e)),
-                    cosmic::iced::Event::Keyboard(iced::keyboard::Event::KeyReleased { key_code, .. }) => {
-                        if key_code == KeyCode::Escape {
-                            Some(Message::Hide)
-                        } else {
-                            None
+                    cosmic::iced::Event::Keyboard(iced::keyboard::Event::KeyReleased { key_code, modifiers }) => {
+                        match key_code {
+                            KeyCode::Escape => Some(Message::Hide),
+                            _ => None
                         }
                     }
+                    cosmic::iced::Event::Keyboard(iced::keyboard::Event::KeyPressed { key_code, modifiers }) => {
+                        match key_code {
+                            KeyCode::Key1 | KeyCode::Numpad1 if modifiers.control() => {
+                                Some(Message::Activate(Some(1)))
+                            },
+                            KeyCode::Key2 | KeyCode::Numpad2 if modifiers.control() => {
+                                Some(Message::Activate(Some(2)))
+                            },
+                            KeyCode::Key3 | KeyCode::Numpad3 if modifiers.control() => {
+                                Some(Message::Activate(Some(3)))
+                            },
+                            KeyCode::Key4 | KeyCode::Numpad4 if modifiers.control() => {
+                                Some(Message::Activate(Some(4)))
+                            },
+                            KeyCode::Key5 | KeyCode::Numpad5 if modifiers.control() => {
+                                Some(Message::Activate(Some(5)))
+                            },
+                            KeyCode::Key6 | KeyCode::Numpad6 if modifiers.control() => {
+                                Some(Message::Activate(Some(6)))
+                            },
+                            KeyCode::Key7 | KeyCode::Numpad7 if modifiers.control() => {
+                                Some(Message::Activate(Some(7)))
+                            },
+                            KeyCode::Key8 | KeyCode::Numpad7 if modifiers.control() => {
+                                Some(Message::Activate(Some(8)))
+                            },
+                            KeyCode::Key9 | KeyCode::Numpad9 if modifiers.control() => {
+                                Some(Message::Activate(Some(9)))
+                            },
+                            KeyCode::Key0 | KeyCode::Numpad0 if modifiers.control() => {
+                                Some(Message::Activate(Some(0)))
+                            },
+                            _ => None
+                        }
+                    }
+
                     _ => None,
                 }),
             ]
