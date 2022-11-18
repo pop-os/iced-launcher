@@ -338,7 +338,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5bcf530afb40e45e14440701e5e996d7fd139e84a912a4d83a8d6a0fb3e58663"
 dependencies = [
  "log",
- "nix 0.25.0",
+ "nix",
  "slotmap",
  "thiserror",
  "vec_map",
@@ -1572,7 +1572,7 @@ dependencies = [
 [[package]]
 name = "iced"
 version = "0.5.2"
-source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#6c51969025a8e6f49a7b9f0cb55871ae041aa449"
+source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#7e4b4923650b0135dc5503f514e3dc6c9dd4c01a"
 dependencies = [
  "iced_core",
  "iced_futures",
@@ -1616,7 +1616,7 @@ dependencies = [
 [[package]]
 name = "iced_core"
 version = "0.6.1"
-source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#6c51969025a8e6f49a7b9f0cb55871ae041aa449"
+source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#7e4b4923650b0135dc5503f514e3dc6c9dd4c01a"
 dependencies = [
  "bitflags",
  "palette",
@@ -1626,7 +1626,7 @@ dependencies = [
 [[package]]
 name = "iced_futures"
 version = "0.5.1"
-source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#6c51969025a8e6f49a7b9f0cb55871ae041aa449"
+source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#7e4b4923650b0135dc5503f514e3dc6c9dd4c01a"
 dependencies = [
  "futures",
  "log",
@@ -1638,7 +1638,7 @@ dependencies = [
 [[package]]
 name = "iced_glow"
 version = "0.4.1"
-source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#6c51969025a8e6f49a7b9f0cb55871ae041aa449"
+source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#7e4b4923650b0135dc5503f514e3dc6c9dd4c01a"
 dependencies = [
  "bytemuck",
  "euclid",
@@ -1653,7 +1653,7 @@ dependencies = [
 [[package]]
 name = "iced_graphics"
 version = "0.4.0"
-source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#6c51969025a8e6f49a7b9f0cb55871ae041aa449"
+source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#7e4b4923650b0135dc5503f514e3dc6c9dd4c01a"
 dependencies = [
  "bitflags",
  "bytemuck",
@@ -1673,7 +1673,7 @@ dependencies = [
 [[package]]
 name = "iced_lazy"
 version = "0.2.0"
-source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#6c51969025a8e6f49a7b9f0cb55871ae041aa449"
+source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#7e4b4923650b0135dc5503f514e3dc6c9dd4c01a"
 dependencies = [
  "iced_native",
  "ouroboros",
@@ -1682,7 +1682,7 @@ dependencies = [
 [[package]]
 name = "iced_native"
 version = "0.6.1"
-source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#6c51969025a8e6f49a7b9f0cb55871ae041aa449"
+source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#7e4b4923650b0135dc5503f514e3dc6c9dd4c01a"
 dependencies = [
  "iced_core",
  "iced_futures",
@@ -1696,7 +1696,7 @@ dependencies = [
 [[package]]
 name = "iced_sctk"
 version = "0.1.0"
-source = "git+https://github.com/pop-os/iced-sctk#6aa6691a36136f1255f87579f54f5b42aad98879"
+source = "git+https://github.com/pop-os/iced-sctk#ccc98d594fe211fca9bc1394006d2917a4091697"
 dependencies = [
  "enum-repr",
  "futures",
@@ -1715,7 +1715,7 @@ dependencies = [
 [[package]]
 name = "iced_style"
 version = "0.5.0"
-source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#6c51969025a8e6f49a7b9f0cb55871ae041aa449"
+source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#7e4b4923650b0135dc5503f514e3dc6c9dd4c01a"
 dependencies = [
  "iced_core",
  "once_cell",
@@ -1725,7 +1725,7 @@ dependencies = [
 [[package]]
 name = "iced_wgpu"
 version = "0.6.1"
-source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#6c51969025a8e6f49a7b9f0cb55871ae041aa449"
+source = "git+https://github.com/pop-os/iced.git?branch=sctk-cosmic#7e4b4923650b0135dc5503f514e3dc6c9dd4c01a"
 dependencies = [
  "bitflags",
  "bytemuck",
@@ -2105,17 +2105,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a51313c5820b0b02bd422f4b44776fbf47961755c74ce64afc73bfad10226c3"
 dependencies = [
  "getrandom",
-]
-
-[[package]]
-name = "nix"
-version = "0.24.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "195cdbc1741b8134346d515b3a56a1c94b0912758009cfd53f99ea0f57b065fc"
-dependencies = [
- "bitflags",
- "cfg-if",
- "libc",
 ]
 
 [[package]]
@@ -2680,11 +2669,10 @@ dependencies = [
 
 [[package]]
 name = "rayon"
-version = "1.5.3"
+version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd99e5772ead8baa5215278c9b15bf92087709e9c1b2d1f97cdb5a183c933a7d"
+checksum = "1e060280438193c554f654141c9ea9417886713b7acd75974c85b18a69a88e0b"
 dependencies = [
- "autocfg",
  "crossbeam-deque",
  "either",
  "rayon-core",
@@ -2692,9 +2680,9 @@ dependencies = [
 
 [[package]]
 name = "rayon-core"
-version = "1.9.3"
+version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "258bcdb5ac6dad48491bb2992db6b7cf74878b0384908af124823d118c99683f"
+checksum = "7ebf1bc4b691de61bd5a8ba170bfd6a1d363ff3cb595a51798d107aab25d2466"
 dependencies = [
  "crossbeam-channel",
  "crossbeam-deque",
@@ -3091,7 +3079,7 @@ checksum = "a507befe795404456341dfab10cef66ead4c041f62b8b11bbb92bffe5d0953e0"
 [[package]]
 name = "smithay-client-toolkit"
 version = "0.16.0"
-source = "git+https://github.com/Smithay/client-toolkit#a143329fc7ec1c132c19696cbe1ecaad0503cb61"
+source = "git+https://github.com/Smithay/client-toolkit#e5d7c9084f8d80bef4c625c6ef52ec42dde4e211"
 dependencies = [
  "bitflags",
  "calloop",
@@ -3099,7 +3087,7 @@ dependencies = [
  "lazy_static",
  "log",
  "memmap2 0.5.8",
- "nix 0.24.2",
+ "nix",
  "pkg-config",
  "thiserror",
  "wayland-backend",
@@ -3303,9 +3291,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.21.2"
+version = "1.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9e03c497dc955702ba729190dc4aac6f2a0ce97f913e5b1b5912fc5039d9099"
+checksum = "d76ce4a75fb488c605c54bf610f221cea8b0dafb53333c1a67e8ee199dcd2ae3"
 dependencies = [
  "autocfg",
  "bytes 1.2.1",
@@ -3664,7 +3652,7 @@ dependencies = [
  "cc",
  "downcast-rs",
  "io-lifetimes",
- "nix 0.25.0",
+ "nix",
  "scoped-tls",
  "smallvec",
  "wayland-sys",
@@ -3679,7 +3667,7 @@ dependencies = [
  "bitflags",
  "futures-channel",
  "futures-core",
- "nix 0.25.0",
+ "nix",
  "thiserror",
  "wayland-backend",
  "wayland-scanner",
@@ -3691,7 +3679,7 @@ version = "0.30.0-beta.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fa5ce1bbc13a3d806648974cba1d53481fea2ac29483eb147e4cce1250fc5263"
 dependencies = [
- "nix 0.25.0",
+ "nix",
  "wayland-client",
  "xcursor",
 ]
@@ -4093,7 +4081,7 @@ dependencies = [
  "futures-sink",
  "futures-util",
  "hex",
- "nix 0.25.0",
+ "nix",
  "once_cell",
  "ordered-stream",
  "rand",

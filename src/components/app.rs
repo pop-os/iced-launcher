@@ -24,13 +24,14 @@ use iced_sctk::commands::layer_surface::{Anchor, KeyboardInteractivity, Layer};
 use iced_sctk::event::wayland::LayerEvent;
 use iced_sctk::event::{wayland, PlatformSpecific};
 use iced_sctk::settings::InitialSurface;
+use once_cell::sync::Lazy;
 use pop_launcher::{IconSource, SearchResult};
 
 use crate::config;
 use crate::subscriptions::launcher::{launcher, LauncherEvent, LauncherRequest};
 use crate::subscriptions::toggle_dbus::{dbus_toggle, LauncherDbusEvent};
 
-pub const NUM_LAUNCHER_ITEMS: u8 = 10;
+static INPUT_ID: Lazy<text_input::Id> = Lazy::new(text_input::Id::unique);
 
 pub fn run() -> cosmic::iced::Result {
     let mut settings = settings();
@@ -207,7 +208,7 @@ impl Application for IcedLauncher {
             }
             Message::Layer(e) => match e {
                 LayerEvent::Focused(_) => {
-                    return text_input::focus(Id::new("launcher_entry"));
+                    return text_input::focus(INPUT_ID.clone());
                 }
                 LayerEvent::Unfocused(_) => {
                     if let Some(id) = self.active_surface {
@@ -229,7 +230,7 @@ impl Application for IcedLauncher {
                     }));
                 }
                 self.input_value = "".to_string();
-                cmds.push(text_input::focus(Id::new("launcher_entry")));
+                cmds.push(text_input::focus(INPUT_ID.clone()));
                 return Command::batch(cmds);
             }
             Message::Toggle => {
@@ -250,7 +251,7 @@ impl Application for IcedLauncher {
                     self.input_value = "".to_string();
                     let id = SurfaceId::new(self.id_ctr);
                     self.active_surface.replace(id);
-                    cmds.push(text_input::focus(Id::new("launcher_entry")));
+                    cmds.push(text_input::focus(INPUT_ID.clone()));
                     cmds.push(commands::layer_surface::get_layer_surface(
                         SctkLayerSurfaceSettings {
                             id,
@@ -287,7 +288,7 @@ impl Application for IcedLauncher {
         .on_submit(Message::Activate(None))
         .padding(8)
         .size(20)
-        .id(Id::new("launcher_entry"));
+        .id(INPUT_ID.clone());
 
         let clear_button = button("X").padding(10).on_press(Message::Clear);
 
