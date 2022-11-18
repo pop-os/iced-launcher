@@ -14,6 +14,7 @@ use cosmic::theme::{Button, Container, Svg};
 use cosmic::widget::{icon, image_icon};
 use cosmic::{settings, widget, Element, Theme};
 use freedesktop_desktop_entry::DesktopEntry;
+use iced::keyboard::KeyCode;
 use iced::wayland::Appearance;
 use iced::widget::svg;
 use iced::Color;
@@ -212,6 +213,7 @@ impl Application for IcedLauncher {
             Message::Layer(e) => match e {
                 LayerEvent::Focused(_) => {}
                 LayerEvent::Unfocused(_) => {
+                    dbg!("unfocused");
                     if let Some(id) = self.active_surface {
                         return commands::layer_surface::destroy_layer_surface(id);
                     }
@@ -417,6 +419,13 @@ impl Application for IcedLauncher {
                     cosmic::iced::Event::PlatformSpecific(PlatformSpecific::Wayland(
                         wayland::Event::Layer(e),
                     )) => Some(Message::Layer(e)),
+                    cosmic::iced::Event::Keyboard(iced::keyboard::Event::KeyReleased { key_code, .. }) => {
+                        if key_code == KeyCode::Escape {
+                            Some(Message::Hide)
+                        } else {
+                            None
+                        }
+                    }
                     _ => None,
                 }),
             ]
