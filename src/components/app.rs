@@ -16,7 +16,6 @@ use cosmic::{settings, widget, Element, Theme};
 use freedesktop_desktop_entry::DesktopEntry;
 use iced::keyboard::KeyCode;
 use iced::wayland::Appearance;
-use iced::widget::svg;
 use iced::Color;
 use iced_sctk::application::SurfaceIdWrapper;
 use iced_sctk::command::platform_specific::wayland::layer_surface::SctkLayerSurfaceSettings;
@@ -26,7 +25,6 @@ use iced_sctk::event::wayland::LayerEvent;
 use iced_sctk::event::{wayland, PlatformSpecific};
 use iced_sctk::settings::InitialSurface;
 use pop_launcher::{IconSource, SearchResult};
-use xdg::BaseDirectories;
 
 use crate::config;
 use crate::subscriptions::launcher::{launcher, LauncherEvent, LauncherRequest};
@@ -36,6 +34,7 @@ pub const NUM_LAUNCHER_ITEMS: u8 = 10;
 
 pub fn run() -> cosmic::iced::Result {
     let mut settings = settings();
+    settings.exit_on_close_request = false;
     settings.initial_surface = InitialSurface::LayerSurface(SctkLayerSurfaceSettings {
         keyboard_interactivity: KeyboardInteractivity::None,
         namespace: "ignore".into(),
@@ -60,7 +59,6 @@ struct IcedLauncher {
     input_value: String,
     launcher_items: Vec<SearchResult>,
     selected_item: Option<usize>,
-    base_directories: Option<BaseDirectories>,
     active_surface: Option<SurfaceId>,
     theme: Theme,
 }
@@ -88,11 +86,8 @@ impl Application for IcedLauncher {
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
         (
-            IcedLauncher {
-                base_directories: xdg::BaseDirectories::with_prefix("icons").ok(),
-                ..Default::default()
-            },
-            Command::none(),
+            IcedLauncher::default(),
+            commands::layer_surface::destroy_layer_surface(SurfaceId::new(0)),
         )
     }
 
@@ -311,9 +306,7 @@ impl Application for IcedLauncher {
                 };
 
                 let mut button_content = Vec::new();
-                if let (Some(icon_source), Some(_base_dirs)) =
-                    (item.category_icon.as_ref(), self.base_directories.as_ref())
-                {
+                if let Some(icon_source) = item.category_icon.as_ref() {
                     match icon_source {
                         IconSource::Name(name) => {
                             button_content.push(
@@ -336,9 +329,7 @@ impl Application for IcedLauncher {
                     }
                 }
 
-                if let (Some(icon_source), Some(_base_dirs)) =
-                    (item.icon.as_ref(), self.base_directories.as_ref())
-                {
+                if let Some(icon_source) = item.icon.as_ref() {
                     match icon_source {
                         IconSource::Name(name) => {
                             if let Some(image) = image_icon(name, 24) {
@@ -393,7 +384,11 @@ impl Application for IcedLauncher {
         .max_width(600);
 
         column![
-            button(text("")).height(Length::Fill).width(Length::Fill).on_press(Message::Hide).style(Button::Transparent),
+            button(text(""))
+                .height(Length::Fill)
+                .width(Length::Fill)
+                .on_press(Message::Hide)
+                .style(Button::Transparent),
             widget::widget::container(content)
                 .style(Container::Custom(|theme| container::Appearance {
                     text_color: Some(theme.cosmic().on_bg_color().into()),
@@ -403,8 +398,12 @@ impl Application for IcedLauncher {
                     border_color: Color::TRANSPARENT,
                 }))
                 .padding([16, 24]),
-            button(text("")).height(Length::Fill).width(Length::Fill).on_press(Message::Hide).style(Button::Transparent),
-            ]
+            button(text(""))
+                .height(Length::Fill)
+                .width(Length::Fill)
+                .on_press(Message::Hide)
+                .style(Button::Transparent),
+        ]
         .width(Length::Fill)
         .height(Length::Fill)
         .into()
@@ -421,47 +420,49 @@ impl Application for IcedLauncher {
                     cosmic::iced::Event::PlatformSpecific(PlatformSpecific::Wayland(
                         wayland::Event::Layer(e),
                     )) => Some(Message::Layer(e)),
-                    cosmic::iced::Event::Keyboard(iced::keyboard::Event::KeyReleased { key_code, modifiers }) => {
-                        match key_code {
-                            KeyCode::Escape => Some(Message::Hide),
-                            _ => None
+                    cosmic::iced::Event::Keyboard(iced::keyboard::Event::KeyReleased {
+                        key_code,
+                        modifiers,
+                    }) => match key_code {
+                        KeyCode::Escape => Some(Message::Hide),
+                        _ => None,
+                    },
+                    cosmic::iced::Event::Keyboard(iced::keyboard::Event::KeyPressed {
+                        key_code,
+                        modifiers,
+                    }) => match key_code {
+                        KeyCode::Key1 | KeyCode::Numpad1 if modifiers.control() => {
+                            Some(Message::Activate(Some(1)))
                         }
-                    }
-                    cosmic::iced::Event::Keyboard(iced::keyboard::Event::KeyPressed { key_code, modifiers }) => {
-                        match key_code {
-                            KeyCode::Key1 | KeyCode::Numpad1 if modifiers.control() => {
-                                Some(Message::Activate(Some(1)))
-                            },
-                            KeyCode::Key2 | KeyCode::Numpad2 if modifiers.control() => {
-                                Some(Message::Activate(Some(2)))
-                            },
-                            KeyCode::Key3 | KeyCode::Numpad3 if modifiers.control() => {
-                                Some(Message::Activate(Some(3)))
-                            },
-                            KeyCode::Key4 | KeyCode::Numpad4 if modifiers.control() => {
-                                Some(Message::Activate(Some(4)))
-                            },
-                            KeyCode::Key5 | KeyCode::Numpad5 if modifiers.control() => {
-                                Some(Message::Activate(Some(5)))
-                            },
-                            KeyCode::Key6 | KeyCode::Numpad6 if modifiers.control() => {
-                                Some(Message::Activate(Some(6)))
-                            },
-                            KeyCode::Key7 | KeyCode::Numpad7 if modifiers.control() => {
-                                Some(Message::Activate(Some(7)))
-                            },
-                            KeyCode::Key8 | KeyCode::Numpad7 if modifiers.control() => {
-                                Some(Message::Activate(Some(8)))
-                            },
-                            KeyCode::Key9 | KeyCode::Numpad9 if modifiers.control() => {
-                                Some(Message::Activate(Some(9)))
-                            },
-                            KeyCode::Key0 | KeyCode::Numpad0 if modifiers.control() => {
-                                Some(Message::Activate(Some(0)))
-                            },
-                            _ => None
+                        KeyCode::Key2 | KeyCode::Numpad2 if modifiers.control() => {
+                            Some(Message::Activate(Some(2)))
                         }
-                    }
+                        KeyCode::Key3 | KeyCode::Numpad3 if modifiers.control() => {
+                            Some(Message::Activate(Some(3)))
+                        }
+                        KeyCode::Key4 | KeyCode::Numpad4 if modifiers.control() => {
+                            Some(Message::Activate(Some(4)))
+                        }
+                        KeyCode::Key5 | KeyCode::Numpad5 if modifiers.control() => {
+                            Some(Message::Activate(Some(5)))
+                        }
+                        KeyCode::Key6 | KeyCode::Numpad6 if modifiers.control() => {
+                            Some(Message::Activate(Some(6)))
+                        }
+                        KeyCode::Key7 | KeyCode::Numpad7 if modifiers.control() => {
+                            Some(Message::Activate(Some(7)))
+                        }
+                        KeyCode::Key8 | KeyCode::Numpad7 if modifiers.control() => {
+                            Some(Message::Activate(Some(8)))
+                        }
+                        KeyCode::Key9 | KeyCode::Numpad9 if modifiers.control() => {
+                            Some(Message::Activate(Some(9)))
+                        }
+                        KeyCode::Key0 | KeyCode::Numpad0 if modifiers.control() => {
+                            Some(Message::Activate(Some(0)))
+                        }
+                        _ => None,
+                    },
 
                     _ => None,
                 }),
