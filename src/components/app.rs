@@ -4,7 +4,6 @@ use std::process::exit;
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::futures::{channel::mpsc, SinkExt};
 use cosmic::iced::subscription::events_with;
-use cosmic::iced::widget::text_input::Id;
 use cosmic::iced::widget::{button, column, container, row, text, text_input};
 use cosmic::iced::{executor, Application, Command, Length, Subscription};
 use cosmic::iced_native::widget::helpers;
@@ -16,6 +15,7 @@ use cosmic::{settings, widget, Element, Theme};
 use freedesktop_desktop_entry::DesktopEntry;
 use iced::keyboard::KeyCode;
 use iced::wayland::Appearance;
+use iced::widget::vertical_space;
 use iced::Color;
 use iced_sctk::application::SurfaceIdWrapper;
 use iced_sctk::command::platform_specific::wayland::layer_surface::SctkLayerSurfaceSettings;
@@ -56,12 +56,12 @@ enum ThemeType {
 #[derive(Default, Clone)]
 struct IcedLauncher {
     id_ctr: u64,
-    tx: Option<mpsc::Sender<LauncherRequest>>,
     input_value: String,
-    launcher_items: Vec<SearchResult>,
     selected_item: Option<usize>,
     active_surface: Option<SurfaceId>,
     theme: Theme,
+    launcher_items: Vec<SearchResult>,
+    tx: Option<mpsc::Sender<LauncherRequest>>,
 }
 
 #[derive(Debug, Clone)]
@@ -277,7 +277,7 @@ impl Application for IcedLauncher {
     fn view(&self, id: SurfaceIdWrapper) -> Element<Message> {
         if id.inner() == SurfaceId::new(0) {
             // TODO just delete the original surface if possible
-            return text("").into();
+            return vertical_space(Length::Units(1)).into();
         }
 
         let launcher_entry = text_input(
@@ -385,7 +385,7 @@ impl Application for IcedLauncher {
         .max_width(600);
 
         column![
-            button(text(""))
+            button(vertical_space(Length::Units(1)))
                 .height(Length::Fill)
                 .width(Length::Fill)
                 .on_press(Message::Hide)
@@ -399,7 +399,7 @@ impl Application for IcedLauncher {
                     border_color: Color::TRANSPARENT,
                 }))
                 .padding([16, 24]),
-            button(text(""))
+            button(vertical_space(Length::Units(1)))
                 .height(Length::Fill)
                 .width(Length::Fill)
                 .on_press(Message::Hide)
