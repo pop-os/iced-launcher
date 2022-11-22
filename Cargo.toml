@@ -5,6 +5,7 @@ authors = ["Ashley Wulber <ashley@system76.com>"]
 edition = "2021"
 
 [dependencies]
+freedesktop-icons = {git = "https://github.com/wash2/freedestkop-icons"}
 libcosmic = { git = "https://github.com/pop-os/libcosmic/", branch = "sctk-cosmic-design-system", default-features = false, features = ["wayland"] }
 iced_sctk = { git = "https://github.com/pop-os/iced-sctk" }
 serde = { version = "1.0.134", features = ["derive"] }

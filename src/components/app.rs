@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 use std::fs;
 use std::process::exit;
 
@@ -15,7 +16,7 @@ use cosmic::{settings, widget, Element, Theme};
 use freedesktop_desktop_entry::DesktopEntry;
 use iced::keyboard::KeyCode;
 use iced::wayland::Appearance;
-use iced::widget::vertical_space;
+use iced::widget::{vertical_space, svg, Image};
 use iced::Color;
 use iced_sctk::application::SurfaceIdWrapper;
 use iced_sctk::command::platform_specific::wayland::layer_surface::SctkLayerSurfaceSettings;
@@ -306,46 +307,51 @@ impl Application for IcedLauncher {
                     item.description.to_string()
                 };
 
+
+
                 let mut button_content = Vec::new();
-                if let Some(icon_source) = item.category_icon.as_ref() {
-                    match icon_source {
-                        IconSource::Name(name) => {
-                            button_content.push(
-                                icon(name, 24)
-                                    .style(Svg::Custom(|theme| iced_style::svg::Appearance {
-                                        fill: Some(theme.palette().text),
-                                    }))
-                                    .into(),
-                            );
-                        }
-                        IconSource::Mime(mime) => {
-                            button_content.push(
-                                icon(mime, 24)
-                                    .style(Svg::Custom(|theme| iced_style::svg::Appearance {
-                                        fill: Some(theme.palette().text),
-                                    }))
-                                    .into(),
-                            );
-                        }
+                if let Some(path) = item.category_icon.as_ref().and_then(|s| {
+                    let name = match s {
+                        IconSource::Name(name) | IconSource::Mime(name) => name
+                    };
+                    freedesktop_icons::lookup(&name)
+                        .with_theme("Pop")
+                        .with_size(32)
+                        .with_cache()
+                        .find()
+                }) {
+                    if path.extension() == Some(&OsStr::new("svg")) {
+                        button_content.push(svg::Svg::from_path(path)
+                        .width(Length::Units(24))
+                        .height(Length::Units(24))
+                        .style(Svg::Custom(|theme| iced_style::svg::Appearance {
+                            fill: Some(theme.palette().text),
+                        })).into())
+                    } else {
+                        button_content.push(Image::new(path)
+                        .width(Length::Units(24))
+                        .height(Length::Units(24)).into())
                     }
                 }
 
-                if let Some(icon_source) = item.icon.as_ref() {
-                    match icon_source {
-                        IconSource::Name(name) => {
-                            if let Some(image) = image_icon(name, 24) {
-                                button_content.push(image.into());
-                            }
-                        }
-                        IconSource::Mime(mime) => {
-                            button_content.push(
-                                icon(mime, 24)
-                                    .style(Svg::Custom(|theme| iced_style::svg::Appearance {
-                                        fill: Some(theme.palette().text),
-                                    }))
-                                    .into(),
-                            );
-                        }
+                if let Some(path) = item.icon.as_ref().and_then(|s| {
+                    let name = match s {
+                        IconSource::Name(name) | IconSource::Mime(name) => name
+                    };
+                    freedesktop_icons::lookup(&name)
+                        .with_theme("Pop")
+                        .with_size(24)
+                        .with_cache()
+                        .find()
+                }) {
+                    if path.extension() == Some(&OsStr::new("svg")) {
+                        button_content.push(svg::Svg::from_path(path)
+                        .width(Length::Units(24))
+                        .height(Length::Units(24)).into())
+                    } else {
+                        button_content.push(Image::new(path)
+                        .width(Length::Units(24))
+                        .height(Length::Units(24)).into())
                     }
                 }
 
