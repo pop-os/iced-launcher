@@ -11,13 +11,12 @@ use cosmic::iced_native::widget::helpers;
 use cosmic::iced_native::window::Id as SurfaceId;
 use cosmic::iced_style::{self, application};
 use cosmic::theme::{Button, Container, Svg};
-use cosmic::widget::{icon, image_icon};
 use cosmic::{settings, widget, Element, Theme};
 use freedesktop_desktop_entry::DesktopEntry;
 use iced::keyboard::KeyCode;
 use iced::wayland::Appearance;
 use iced::widget::{vertical_space, svg, Image};
-use iced::Color;
+use iced::{Color, Alignment};
 use iced_sctk::application::SurfaceIdWrapper;
 use iced_sctk::command::platform_specific::wayland::layer_surface::SctkLayerSurfaceSettings;
 use iced_sctk::commands;
@@ -45,13 +44,6 @@ pub fn run() -> cosmic::iced::Result {
         ..Default::default()
     });
     IcedLauncher::run(settings.into())
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-enum ThemeType {
-    Light,
-    Dark,
-    Custom,
 }
 
 #[derive(Default, Clone)]
@@ -373,7 +365,7 @@ impl Application for IcedLauncher {
                     .into(),
                 );
 
-                let btn = button(helpers::row(button_content).spacing(8))
+                let btn = button(helpers::row(button_content).spacing(8).align_items(Alignment::Center))
                     .width(Length::Fill)
                     .on_press(Message::Activate(Some(i)))
                     .padding([8, 16])
